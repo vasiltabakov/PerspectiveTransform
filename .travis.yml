@@ -38,7 +38,6 @@ matrix:
         tags: true
   - stage: test
     name: Check dependencies up-to-date, Lint
-    env: CACHE_NAME=iOS
     script:
         - bundle exec pod update --project-directory=Example
         - git diff --exit-code # Outdated Cocoapods dependencies found, please run 'pod update' and checkin changes
@@ -47,13 +46,14 @@ matrix:
         - bundle exec pod lib lint || bundle exec pod lib lint --verbose --no-clean
   - stage: test
     name: With coverage report
-    env: XCODE_DESNITATION='platform=iOS Simulator,name=iPhone X' CACHE_NAME=iOS
+    xcode_destination: platform=iOS Simulator,OS=12.1,name=iPhone X
     after_success:
       - bash <(curl -s 'https://codecov.io/bash') -Z -J '^PerspectiveTransform$' -X gcov -X fix
   - stage: test
     name: Mac OS
     xcode_scheme: OpenCV Tests
-    env: XCODE_DESNITATION='platform=macos' CACHE_NAME=macOS
+    xcode_destination: platform=macos
+    env: CACHE_NAME=macOS
     before_script:
       - yes | pip2 uninstall numpy > /dev/null # Fix Conflict between numpy installed by pip and brew, see https://github.com/travis-ci/travis-ci/issues/6688
       - for package in opencv xz $(brew deps opencv); do brew link $package || brew install $package; done
@@ -86,7 +86,9 @@ before_install:
   - ls -la Example/Pods/Manifest.lock && echo Skipping cocoapods repo update || git -C ~/.cocoapods/repos/master/ pull --quiet
 script:
   - set -o pipefail && xcodebuild test -workspace "$TRAVIS_XCODE_WORKSPACE" -scheme "$TRAVIS_XCODE_SCHEME" -destination "$XCODE_DESNITATION" | bundle exec xcpretty -f `bundle exec xcpretty-travis-formatter`
-env:
-  - XCODE_DESNITATION='platform=iOS Simulator,name=iPhone SE' CACHE_NAME=iOS
-  - XCODE_DESNITATION='platform=iOS Simulator,name=iPhone 8 Plus' CACHE_NAME=iOS
-  - XCODE_DESNITATION='platform=iOS Simulator,name=iPhone 8' CACHE_NAME=iOS
+env: CACHE_NAME=iOS
+xcode_destination:
+  - platform=iOS Simulator,OS=12.1,name=iPhone X
+  - platform=iOS Simulator,OS=12.1,name=iPhone SE
+  - platform=iOS Simulator,OS=12.1,name=iPhone 8 Plus
+  - platform=iOS Simulator,OS=12.1,name=iPhone 8
